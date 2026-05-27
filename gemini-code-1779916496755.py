@@ -1,0 +1,687 @@
+import json
+
+# Define the HTML content for the standalone mobile application
+html_content = """<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CaddyHack - Casual Golf Game Tracker</title>
+    <style>
+        :root {
+            --bg-main: #141e17;
+            --bg-card: #1f2e24;
+            --bg-nested: #2a3d30;
+            --primary: #4ade80;
+            --primary-hover: #22c55e;
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --accent-red: #f87171;
+            --accent-amber: #fbbf24;
+            --accent-blue: #60a5fa;
+            --border: #374151;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            padding: 12px;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .phone-container {
+            width: 100%;
+            max-width: 480px;
+            background-color: var(--bg-main);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            padding-bottom: 40px;
+        }
+
+        header {
+            background-color: var(--bg-card);
+            padding: 16px;
+            border-radius: 12px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        header h1 {
+            font-size: 24px;
+            color: var(--primary);
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+
+        header p {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        .card {
+            background-color: var(--bg-card);
+            border-radius: 12px;
+            padding: 16px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 8px;
+        }
+
+        /* Player configuration elements */
+        .player-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            background-color: var(--bg-nested);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 10px 12px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        input[type="text"]:focus {
+            outline: 2px solid var(--primary);
+        }
+
+        .btn {
+            background-color: var(--primary);
+            color: #0b130e;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .btn-secondary {
+            background-color: var(--bg-nested);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--border);
+        }
+
+        .btn-danger {
+            background-color: transparent;
+            color: var(--accent-red);
+            border: 1px solid rgba(248, 113, 113, 0.3);
+            padding: 10px;
+        }
+
+        .btn-danger:hover {
+            background-color: rgba(248, 113, 113, 0.1);
+        }
+
+        .btn-full {
+            width: 100%;
+        }
+
+        /* Game Selector Grid */
+        .game-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 8px;
+        }
+
+        .game-select-btn {
+            background-color: var(--bg-nested);
+            border: 1px solid var(--border);
+            padding: 12px;
+            border-radius: 8px;
+            color: var(--text-main);
+            text-align: left;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s;
+        }
+
+        .game-select-btn.active {
+            border-color: var(--primary);
+            background-color: rgba(74, 222, 128, 0.1);
+        }
+
+        .game-select-btn .game-name {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .random-container {
+            margin-top: 12px;
+        }
+
+        /* Active Game Section */
+        .active-game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .rules-box {
+            background-color: var(--bg-nested);
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            line-height: 1.5;
+            color: var(--text-muted);
+            margin-bottom: 16px;
+            border-left: 3px solid var(--primary);
+            display: none;
+        }
+
+        .rules-box.visible {
+            display: block;
+        }
+
+        .action-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .player-action-card {
+            background-color: var(--bg-nested);
+            border-radius: 8px;
+            padding: 12px;
+            border: 1px solid rgba(255,255,255,0.03);
+        }
+
+        .player-action-name {
+            font-weight: 700;
+            font-size: 14px;
+            margin-bottom: 8px;
+            color: var(--primary);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .action-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 6px;
+        }
+
+        .action-btn {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 8px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        .action-btn:active {
+            background-color: var(--border);
+        }
+
+        /* Status Badges */
+        .badge {
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .badge-amber { background-color: rgba(251, 191, 36, 0.2); color: var(--accent-amber); }
+        .badge-red { background-color: rgba(248, 113, 113, 0.2); color: var(--accent-red); }
+        .badge-blue { background-color: rgba(96, 165, 250, 0.2); color: var(--accent-blue); }
+
+        /* Leaderboard table */
+        .leaderboard-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        .leaderboard-table th, .leaderboard-table td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .leaderboard-table th {
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+
+        .drink-count {
+            color: var(--accent-amber);
+            font-weight: bold;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background-color: var(--primary);
+            color: #0b130e;
+            padding: 12px 24px;
+            border-radius: 30px;
+            font-weight: 700;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 1000;
+            pointer-events: none;
+            font-size: 14px;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+    </style>
+</head>
+<body>
+
+<div class="phone-container">
+    <header>
+        <h1>⛳ CaddyHack</h1>
+        <p>Casual & Drinking Golf Game Companion</p>
+    </header>
+
+    <div class="card">
+        <div class="card-title">
+            <span>👥 Setup Players (3-6)</span>
+            <span id="player-count-badge" class="badge badge-blue">3 Players</span>
+        </div>
+        <div id="players-list">
+            </div>
+        <button class="btn btn-secondary btn-full" style="margin-top: 8px;" onclick="addPlayerField()">➕ Add Player</button>
+    </div>
+
+    <div class="card">
+        <div class="card-title">
+            <span>🎯 Select Game Format</span>
+        </div>
+        <div class="game-grid" id="game-selectors">
+            </div>
+        <div class="random-container">
+            <button class="btn btn-full" onclick="selectRandomGame()">🎲 Let Fate Decide (Random)</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="active-game-header">
+            <div>
+                <h2 id="active-game-title" style="font-size: 18px; color: var(--primary);">Bingo, Bango, Bongo</h2>
+                <p id="active-game-subtitle" style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Track actions for current hole</p>
+            </div>
+            <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;" onclick="toggleRules()">📋 Rules</button>
+        </div>
+
+        <div id="game-rules-box" class="rules-box">
+            </div>
+
+        <div class="action-grid" id="scoring-actions-container">
+            </div>
+    </div>
+
+    <div class="card">
+        <div class="card-title">
+            <span>📊 Live Leaderboard & Drink Count</span>
+            <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 11px;" onclick="resetStats()">🔄 Reset All</button>
+        </div>
+        <table class="leaderboard-table">
+            <thead>
+                <tr>
+                    <th>Player</th>
+                    <th id="score-column-header">Points</th>
+                    <th>🍻 Drinks</th>
+                </tr>
+            </thead>
+            <tbody id="leaderboard-body">
+                </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="toast" id="toast-notification">Logged! 🍻</div>
+
+<script>
+    // Game Formats configuration
+    const gamesConfig = {
+        "bbb": {
+            name: "Bingo, Bango, Bongo",
+            rules: "Points awarded on order of achievements. Perfect for mixed skills: 1. Bingo: First on the green. 2. Bango: Closest to pin once all are on green. 3. Bongo: First to sink putt. DRINKING: Any player who hits a hazard drinks. If someone gets a clean sweep (all 3 points), others finish their drink.",
+            actions: [
+                { label: "🎯 Bingo (1st on Green)", points: 1, drinks: 0, msg: "Bingo!" },
+                { label: "📏 Bango (Closest)", points: 1, drinks: 0, msg: "Bango!" },
+                { label: "⛳ Bongo (1st in Cup)", points: 1, drinks: 0, msg: "Bongo!" },
+                { label: "💦 Water/Bunker Penalty", points: 0, drinks: 1, msg: "Take a sip! 🍻" }
+            ],
+            scoreHeader: "Points"
+        },
+        "stableford": {
+            name: "Stableford (Modified)",
+            rules: "Earn points based on par performance. High handicap equalizers can be applied. Double Bogey or worse: 0 pts, Bogey: 1 pt, Par: 2 pts, Birdie: 3 pts, Eagle: 4 pts. DRINKING: Single-digit handicappers drink on making a Par. High handicappers only drink on Double Bogey or worse.",
+            actions: [
+                { label: "🦅 Eagle", points: 4, drinks: 0, msg: "Insane Eagle! 🦅" },
+                { label: "🐤 Birdie", points: 3, drinks: 0, msg: "Birdie Juice! 🐤" },
+                { label: "⛳ Par", points: 2, drinks: 0, msg: "Solid Par" },
+                { label: "🪵 Bogey", points: 1, drinks: 0, msg: "Bogey registered" },
+                { label: "☠️ Double+", points: 0, drinks: 1, msg: "Double Bogey! Take a drink 🍻" }
+            ],
+            scoreHeader: "Points"
+        },
+        "stringball": {
+            name: "Stringball",
+            rules: "Every player gets an imaginary string length (e.g., 1 foot per handicap point) to move their ball out of trouble or into the hole. Use your string tactically! Once it's gone, it's gone. DRINKING: Every time you 'spend' your string to save yourself, you must take a drink.",
+            actions: [
+                { label: "🧵 Spent String (Save)", points: -1, drinks: 1, msg: "Used string! Take a drink 🧵🍻" },
+                { label: "🏌️ Clean Hole (No String)", points: 1, drinks: 0, msg: "No string used! +1 Pts" }
+            ],
+            scoreHeader: "String Left"
+        },
+        "9s": {
+            name: "9s (5-3-1)",
+            rules: "Perfect for 3 players or pairs. 9 points up for grabs every hole. Outright winner: 5pts, 2nd: 3pts, 3rd: 1pt. Ties split the points (e.g. 4-4-1 or 5-2-2). DRINKING: Whoever comes dead last on a hole (1pt or 0pts) must take a drink. Birdie wins force others to chug.",
+            actions: [
+                { label: "🥇 1st Place (5 pts)", points: 5, drinks: 0, msg: "Top points!" },
+                { label: "🥈 2nd Place (3 pts)", points: 3, drinks: 0, msg: "Steady second" },
+                { label: "🥉 3rd Place (1 pt)", points: 1, drinks: 1, msg: "Last place! Drink up 🍻" },
+                { label: "🤝 Tie Split (4 pts)", points: 4, drinks: 0, msg: "Split points" }
+            ],
+            scoreHeader: "Total Pts"
+        },
+        "animal": {
+            name: "The 'Animal' Bag",
+            rules: "Bad shots hand you animals. Hold them until someone else screws up. Frog = Water, Camel = Sand, Woodpecker = Tree, Snake = 3-putt. DRINKING: If you hold an animal when walking off the green, you take a drink for each!",
+            actions: [
+                { label: "🐸 Frog (Water)", points: 0, drinks: 1, msg: "Splash! Frog acquired 🐸" },
+                { label: "🐪 Camel (Sand)", points: 0, drinks: 1, msg: "Trapped! Camel acquired 🐪" },
+                { label: "🪵 Woodpecker (Tree)", points: 0, drinks: 1, msg: "Clunk! Woodpecker acquired 🪵" },
+                { label: "🐍 Snake (3-Putt)", points: 0, drinks: 1, msg: "Rattled! Snake acquired 🐍" }
+            ],
+            scoreHeader: "Infractions"
+        },
+        "trouble": {
+            name: "“Trouble” (Disaster)",
+            rules: "Points are bad! Track disasters. Out of bounds = 1pt, Water = 1pt, Bunker = 1pt, 3-putt = 1pt, 4-putt = 3pts. Making a Par on a hole wipes out all points from that hole! DRINKING: Highest trouble score every 3 holes buys a round or drinks deep.",
+            actions: [
+                { label: "💥 OB / Hazard (+1)", points: 1, drinks: 0, msg: "Trouble! +1 Pt" },
+                { label: "🐍 3-Putt (+1)", points: 1, drinks: 0, msg: "3-Putt! +1 Pt" },
+                { label: "😱 4-Putt (+3)", points: 3, drinks: 1, msg: "Disaster! Drink & +3 Pts 🍻" },
+                { label: "✨ Par Save (Wipe)", points: -2, drinks: 0, msg: "Par Save! Erased points" }
+            ],
+            scoreHeader: "Trouble Pts"
+        },
+        "poker": {
+            name: "Poker Golf",
+            rules: "Earn virtual cards for milestones: Fairway hit = 1 card, Green in Regulation = 1 card, 1-Putt = 1 card, Birdie = 2 cards. Best poker hand at the end of the round wins. DRINKING: Worst poker hand buys the round or drinks up!",
+            actions: [
+                { label: "🛣️ Fairway Hit", points: 1, drinks: 0, msg: "Earned 1 Card 🃏" },
+                { label: "⛳ Green (GIR)", points: 1, drinks: 0, msg: "Earned 1 Card 🃏" },
+                { label: "🎯 1-Putt", points: 1, drinks: 0, msg: "Earned 1 Card 🃏" },
+                { label: "🐤 Birdie Milestone", points: 2, drinks: 0, msg: "Earned 2 Cards! 🃏🃏" }
+            ],
+            scoreHeader: "Cards"
+        }
+    };
+
+    // State Variables
+    let players = ["Driver Dan", "Slice Sam", "Hooking Harry"];
+    let selectedGameKey = "bbb";
+    let scores = {}; // structure: { player_name: { gameKey: score_val, drinks: drink_val } }
+
+    // Initialization
+    function init() {
+        renderPlayerSetup();
+        renderGameSelectors();
+        initScores();
+        updateActiveGameSection();
+        renderLeaderboard();
+    }
+
+    function initScores() {
+        players.forEach(p => {
+            if (!scores[p]) {
+                scores[p] = { drinks: 0 };
+                Object.keys(gamesConfig).forEach(g => {
+                    // Give stringball an initial baseline of 15 feet string pool
+                    scores[p][g] = (g === 'stringball') ? 15 : 0;
+                });
+            }
+        });
+    }
+
+    function renderPlayerSetup() {
+        const container = document.getElementById("players-list");
+        container.innerHTML = "";
+        players.forEach((player, idx) => {
+            const div = document.createElement("div");
+            div.className = "player-row";
+            div.innerHTML = `
+                <input type="text" value="${player}" onchange="updatePlayerName(${idx}, this.value)">
+                <button class="btn btn-danger" onclick="removePlayer(${idx})">🗑️</button>
+            `;
+            container.appendChild(div);
+        });
+        document.getElementById("player-count-badge").innerText = `${players.length} Players`;
+    }
+
+    function addPlayerField() {
+        if (players.length >= 6) {
+            showToast("Maximum 6 players allowed!");
+            return;
+        }
+        players.push(`Player ${players.length + 1}`);
+        initScores();
+        renderPlayerSetup();
+        updateActiveGameSection();
+        renderLeaderboard();
+    }
+
+    function removePlayer(idx) {
+        if (players.length <= 3) {
+            showToast("Minimum 3 players required!");
+            return;
+        }
+        const removed = players.splice(idx, 1)[0];
+        delete scores[removed];
+        renderPlayerSetup();
+        updateActiveGameSection();
+        renderLeaderboard();
+    }
+
+    function updatePlayerName(idx, newName) {
+        if (!newName.trim()) return;
+        const oldName = players[idx];
+        players[idx] = newName.trim();
+        if (scores[oldName]) {
+            scores[newName.trim()] = scores[oldName];
+            delete scores[oldName];
+        }
+        updateActiveGameSection();
+        renderLeaderboard();
+    }
+
+    function renderGameSelectors() {
+        const container = document.getElementById("game-selectors");
+        container.innerHTML = "";
+        Object.keys(gamesConfig).forEach(key => {
+            const btn = document.createElement("button");
+            btn.className = `game-select-btn ${key === selectedGameKey ? 'active' : ''}`;
+            btn.id = `btn-game-${key}`;
+            btn.onclick = () => setGame(key);
+            btn.innerHTML = `
+                <span class="game-name">${gamesConfig[key].name}</span>
+                <span>➡️</span>
+            `;
+            container.appendChild(btn);
+        });
+    }
+
+    function setGame(key) {
+        selectedGameKey = key;
+        document.querySelectorAll(".game-select-btn").forEach(b => b.classList.remove("active"));
+        document.getElementById(`btn-game-${key}`).classList.add("active");
+        
+        document.getElementById("active-game-title").innerText = gamesConfig[key].name;
+        document.getElementById("score-column-header").innerText = gamesConfig[key].scoreHeader;
+        
+        // Hide rules box automatically when shifting games
+        document.getElementById("game-rules-box").classList.remove("visible");
+        
+        updateActiveGameSection();
+        renderLeaderboard();
+        showToast(`Switched to ${gamesConfig[key].name}`);
+    }
+
+    function selectRandomGame() {
+        const keys = Object.keys(gamesConfig);
+        const randomKey = keys[Math.floor(Math.random() * keys.length)];
+        setGame(randomKey);
+    }
+
+    function toggleRules() {
+        const box = document.getElementById("game-rules-box");
+        box.innerText = gamesConfig[selectedGameKey].rules;
+        box.classList.toggle("visible");
+    }
+
+    function updateActiveGameSection() {
+        const container = document.getElementById("scoring-actions-container");
+        container.innerHTML = "";
+        const game = gamesConfig[selectedGameKey];
+
+        players.forEach(player => {
+            const card = document.createElement("div");
+            card.className = "player-action-card";
+            
+            let nameHeader = document.createElement("div");
+            nameHeader.className = "player-action-name";
+            nameHeader.innerHTML = `<span>${player}</span>`;
+            card.appendChild(nameHeader);
+
+            const btnGrid = document.createElement("div");
+            btnGrid.className = "action-buttons";
+
+            game.actions.forEach(act => {
+                const b = document.createElement("button");
+                b.className = "action-btn";
+                b.innerText = act.label;
+                b.onclick = () => logAction(player, act.points, act.drinks, act.msg);
+                btnGrid.appendChild(b);
+            });
+
+            card.appendChild(btnGrid);
+            container.appendChild(card);
+        });
+    }
+
+    function logAction(player, pts, drks, msg) {
+        if (!scores[player]) initScores();
+        
+        scores[player][selectedGameKey] += pts;
+        scores[player].drinks += drks;
+        
+        renderLeaderboard();
+        showToast(`${player}: ${msg}`);
+    }
+
+    function renderLeaderboard() {
+        const tbody = document.getElementById("leaderboard-body");
+        tbody.innerHTML = "";
+
+        // Sort players based on current game score logic
+        // For 'trouble' lower points is better, for others higher is better
+        let sortedPlayers = [...players].sort((a,b) => {
+            let scoreA = scores[a]?.[selectedGameKey] || 0;
+            let scoreB = scores[b]?.[selectedGameKey] || 0;
+            if (selectedGameKey === 'trouble') {
+                return scoreA - scoreB; // Ascending order for disaster points
+            } else {
+                return scoreB - scoreA; // Descending order for regular points
+            }
+        });
+
+        sortedPlayers.forEach(player => {
+            const tr = document.createElement("tr");
+            const currentScore = scores[player]?.[selectedGameKey] ?? 0;
+            const currentDrinks = scores[player]?.drinks ?? 0;
+
+            tr.innerHTML = `
+                <td style="font-weight: 600;">${player}</td>
+                <td style="font-weight: 700; font-size:16px;">${currentScore}</td>
+                <td class="drink-count">🍺 ${currentDrinks}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function resetStats() {
+        if (confirm("Are you sure you want to reset scores and drink tallies for all players?")) {
+            scores = {};
+            initScores();
+            renderLeaderboard();
+            showToast("All stats reset to zero!");
+        }
+    }
+
+    function showToast(text) {
+        const t = document.getElementById("toast-notification");
+        t.innerText = text;
+        t.classList.add("show");
+        setTimeout(() => {
+            t.classList.remove("show");
+        }, 2000);
+    }
+
+    // Run app
+    window.onload = init;
+</script>
+
+</body>
+</html>
+"""
+
+# Write the code cleanly out to a file
+with open("caddyhack_app.html", "w", encoding="utf-8") as file:
+    file.write(html_content)
+
+print("HTML Single-Page App successfully compiled.")
